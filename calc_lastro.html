@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cálculo de Caixas em um Pallet</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <img src="./logo.png" alt="">
+        <h1>Cálculo de Lastro</h1>
+        <!-- <label for="larguraPallet">Largura do Pallet (cm):</label> -->
+        <input type="number" id="larguraPallet" required placeholder="Largura do Pallet"><br>
+
+        <!-- <label for="comprimentoPallet">Comprimento do Pallet (cm):</label> -->
+        <input type="number" id="comprimentoPallet" required placeholder="Comprimento do Pallet (cm):"><br>
+
+        <!-- <label for="larguraCaixa">Largura da Caixa (cm):</label> -->
+        <input type="number" id="larguraCaixa" required placeholder="Largura da Caixa (cm):"><br>
+
+        <!-- <label for="comprimentoCaixa">Comprimento da Caixa (cm):</label> -->
+        <input type="number" id="comprimentoCaixa" required placeholder="Comprimento da Caixa (cm):"><br>
+
+        <button onclick="calcularCaixas()">Calcular</button>
+
+        
+    </div>
+
+    <div class="container">
+        <h2>Resultados</h2>
+        <p id="resultado"></p>
+        <div class="pallet" id="pallet"></div>
+
+    </div>
+    <script>
+        function desenhaLastro(qntCaixas, largPallet, comprimentoPallet, largCaixa, compCaixa){
+            const quantidadeCaixas = qntCaixas; 
+            const pallet = document.getElementById('pallet');
+            pallet.innerHTML = ''
+
+            const larguraPallet = comprimentoPallet * 3; // largura do pallet
+            const comprimentPallet = largPallet * 3; // comprimento do pallet
+
+            const cols = Math.ceil(Math.sqrt(quantidadeCaixas));
+            const tamanhoQuadrado = Math.min((larguraPallet / cols), (comprimentPallet / Math.ceil(quantidadeCaixas / cols))); // Subtrai 5 para o gap
+
+            pallet.style.gridTemplateColumns = `repeat(${cols}, ${tamanhoQuadrado}px)`;
+
+            for (let i = 0; i < quantidadeCaixas; i++) {
+                const caixa = document.createElement('div');
+                caixa.classList.add('caixa');
+                caixa.style.width = `${tamanhoQuadrado}px`;
+                caixa.style.height = `${tamanhoQuadrado}px`;
+                pallet.appendChild(caixa);
+            }
+        }
+
+        function calcularCombinacaoCaixas(palletLargura, palletComprimento, caixaLargura, caixaComprimento) {
+            // Opção 1: Caixas na orientação original
+            const caixasLarguraOriginal = Math.floor(palletLargura / caixaLargura);
+            const caixasComprimentoOriginal = Math.floor(palletComprimento / caixaComprimento);
+            const totalOriginal = caixasLarguraOriginal * caixasComprimentoOriginal;
+            const espacoLarguraRestante1 = palletLargura - (caixasLarguraOriginal * caixaLargura);
+            const espacoComprimentoRestante1 = palletComprimento - (caixasComprimentoOriginal * caixaComprimento);
+
+            // Opção 2: Caixas na orientação rotacionada
+            const caixasLarguraRotacionada = Math.floor(palletLargura / caixaComprimento);
+            const caixasComprimentoRotacionada = Math.floor(palletComprimento / caixaLargura);
+            const totalRotacionada = caixasLarguraRotacionada * caixasComprimentoRotacionada;
+            const espacoLarguraRestante2 = palletLargura - (caixasLarguraRotacionada * caixaComprimento);
+            const espacoComprimentoRestante2 = palletComprimento - (caixasComprimentoRotacionada * caixaLargura);
+
+            // Combinação 1: Original + Rotacionada no espaço restante
+            var caixasRotacionadasNoEspacoRestante1 = Math.floor(espacoLarguraRestante1 / caixaComprimento) * Math.floor(palletComprimento / caixaLargura);
+            caixasRotacionadasNoEspacoRestante1 += Math.floor(espacoComprimentoRestante1 / caixaLargura) * Math.floor(palletLargura / caixaComprimento);
+            const totalCombinado1 = totalOriginal + caixasRotacionadasNoEspacoRestante1;
+
+            // Combinação 2: Rotacionada + Original no espaço restante
+            var caixasOriginaisNoEspacoRestante2 = Math.floor(espacoLarguraRestante2 / caixaLargura) * Math.floor(palletComprimento / caixaComprimento);
+            caixasOriginaisNoEspacoRestante2 += Math.floor(espacoComprimentoRestante2 / caixaComprimento) * Math.floor(palletLargura / caixaLargura);
+            const totalCombinado2 = totalRotacionada + caixasOriginaisNoEspacoRestante2;
+
+            // Verifica qual combinação maximiza o número de caixas
+            if (totalCombinado1 > totalCombinado2) {
+                desenhaLastro(totalCombinado1, palletLargura,palletComprimento, caixaLargura, caixaComprimento)
+                return [totalOriginal, caixasRotacionadasNoEspacoRestante1, totalCombinado1];
+            } else {
+                desenhaLastro(totalCombinado1, palletLargura,palletComprimento, caixaLargura, caixaComprimento)
+                return [caixasOriginaisNoEspacoRestante2, totalRotacionada, totalCombinado2];
+            }
+        }
+
+        function calcularCaixas() {
+            const larguraPallet = parseFloat(document.getElementById('larguraPallet').value);
+            const comprimentoPallet = parseFloat(document.getElementById('comprimentoPallet').value);
+            const larguraCaixa = parseFloat(document.getElementById('larguraCaixa').value);
+            const comprimentoCaixa = parseFloat(document.getElementById('comprimentoCaixa').value);
+
+            const [caixasOriginal, caixasRotacionadas, totalMaximo] = calcularCombinacaoCaixas(larguraPallet, comprimentoPallet, larguraCaixa, comprimentoCaixa);
+
+            const resultado = `Caixas na orientação original: ${caixasOriginal}<br>
+                               Caixas na orientação rotacionada: ${caixasRotacionadas}<br>
+                               Total máximo de caixas no pallet: ${totalMaximo}`;
+
+            document.getElementById('resultado').innerHTML = resultado;
+        }
+    </script>
+</body>
+
+</html>
